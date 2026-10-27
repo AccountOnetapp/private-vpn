@@ -9,6 +9,7 @@ DerivedData/
 .pub-cache/
 .pub/
 build/
+ios/Frameworks/LibXray.xcframework/
 coverage/
 xcuserdata/
 *.xcuserstate

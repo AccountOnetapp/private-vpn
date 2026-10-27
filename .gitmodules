@@ -1,0 +1,3 @@
+[submodule "ios/Packages/amneziawg-apple"]
+	path = ios/Packages/amneziawg-apple
+	url = https://github.com/amnezia-vpn/amneziawg-apple.git

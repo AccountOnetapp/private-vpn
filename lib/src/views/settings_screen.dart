@@ -19,9 +19,9 @@ class SettingsScreen extends StatelessWidget {
           const _SectionTitle('Connection'),
           const ListTile(title: Text('Mode'), trailing: Text('Automatic')),
           const ListTile(title: Text('Routing'), trailing: Text('RU direct')),
-          const ListTile(
-            title: Text('Transport'),
-            trailing: Text('Core pending'),
+          ListTile(
+            title: const Text('Transport'),
+            trailing: Text(controller.profile?.engine.label ?? 'None'),
           ),
           const SizedBox(height: 16),
           const _SectionTitle('Device'),
@@ -29,7 +29,7 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Subscription'),
             subtitle: Text(controller.profile?.maskedAddress ?? 'None'),
           ),
-          const ListTile(title: Text('Version'), trailing: Text('0.1.0 (1)')),
+          const ListTile(title: Text('Version'), trailing: Text('0.2.0 (2)')),
           const SizedBox(height: 28),
           OutlinedButton.icon(
             onPressed: () => _confirmRemoval(context),

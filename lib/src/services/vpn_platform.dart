@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../models/subscription_profile.dart';
+
 enum VpnState {
   disconnected('Not connected'),
   connecting('Connecting'),
@@ -15,10 +17,12 @@ enum VpnState {
 class VpnPlatform {
   static const _channel = MethodChannel('com.accountonetapp.privatevpn/vpn');
 
-  Future<void> configure(String subscriptionUrl) async {
+  Future<void> configure(SubscriptionProfile profile) async {
     try {
       await _channel.invokeMethod<void>('configure', {
-        'subscriptionURL': subscriptionUrl,
+        'engine': profile.engine.name,
+        'configuration': profile.configuration,
+        'serverAddress': profile.maskedAddress,
       });
     } on MissingPluginException {
       if (!kDebugMode) rethrow;
@@ -28,7 +32,16 @@ class VpnPlatform {
   Future<VpnState> connect() async {
     try {
       final value = await _channel.invokeMethod<String>('connect');
-      return _parse(value);
+      var state = _parse(value);
+      for (
+        var attempt = 0;
+        state == VpnState.connecting && attempt < 60;
+        attempt++
+      ) {
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        state = _parse(await _channel.invokeMethod<String>('status'));
+      }
+      return state == VpnState.connecting ? VpnState.unavailable : state;
     } on MissingPluginException {
       if (kDebugMode) return VpnState.connected;
       rethrow;

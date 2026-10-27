@@ -54,7 +54,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Activate this device with your private subscription link.',
+                      'Paste a subscription link, VLESS link, or AmneziaWG profile.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyLarge
                           ?.copyWith(color: Colors.white70),
@@ -62,11 +62,13 @@ class _ActivationScreenState extends State<ActivationScreen> {
                     const SizedBox(height: 34),
                     TextField(
                       controller: _urlController,
-                      keyboardType: TextInputType.url,
+                      keyboardType: TextInputType.multiline,
+                      minLines: 1,
+                      maxLines: 5,
                       autocorrect: false,
                       decoration: const InputDecoration(
-                        labelText: 'Subscription link',
-                        hintText: 'https://sub.example.com/api/sub/…',
+                        labelText: 'Subscription or profile',
+                        hintText: 'https://…  •  vless://…  •  [Interface]…',
                         prefixIcon: Icon(Icons.link_rounded),
                         border: OutlineInputBorder(),
                       ),
@@ -116,7 +118,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
                     ],
                     const SizedBox(height: 20),
                     const Text(
-                      'The link is stored in platform-secure storage and is treated like a password.',
+                      'Credentials are stored in platform-secure storage and are never written to logs.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.white54),
                     ),

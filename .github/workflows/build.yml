@@ -13,11 +13,17 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.x"
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.47.8"
           cache: true
       - run: flutter pub get
+      - run: ./scripts/bootstrap_ios_cores.sh
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze --no-pub
       - run: flutter test --no-pub

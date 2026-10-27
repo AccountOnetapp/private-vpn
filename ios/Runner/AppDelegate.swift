@@ -26,45 +26,75 @@ import UIKit
 }
 
 private final class VPNBridge {
-  private let providerBundleIdentifier = "com.accountonetapp.privateVpn.PacketTunnel"
+  private let xrayBundleIdentifier = "com.accountonetapp.privateVpn.PacketTunnel"
+  private let amneziaBundleIdentifier = "com.accountonetapp.privateVpn.AmneziaPacketTunnel"
   private var manager: NETunnelProviderManager?
 
   func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
     case "configure":
       guard let arguments = call.arguments as? [String: Any],
-            let subscriptionURL = arguments["subscriptionURL"] as? String else {
-        result(FlutterError(code: "INVALID_ARGUMENT", message: "Missing subscriptionURL", details: nil))
+            let engine = arguments["engine"] as? String,
+            let configuration = arguments["configuration"] as? String,
+            let serverAddress = arguments["serverAddress"] as? String else {
+        result(FlutterError(code: "INVALID_ARGUMENT", message: "Missing VPN configuration", details: nil))
         return
       }
-      configure(subscriptionURL: subscriptionURL, result: result)
+      configure(
+        engine: engine,
+        configuration: configuration,
+        serverAddress: serverAddress,
+        result: result
+      )
     case "connect":
       connect(result: result)
     case "disconnect":
       manager?.connection.stopVPNTunnel()
       result("disconnected")
+    case "status":
+      result(statusName(manager?.connection.status ?? .invalid))
     default:
       result(FlutterMethodNotImplemented)
     }
   }
 
-  private func configure(subscriptionURL: String, result: @escaping FlutterResult) {
+  private func configure(
+    engine: String,
+    configuration: String,
+    serverAddress: String,
+    result: @escaping FlutterResult
+  ) {
 #if targetEnvironment(simulator)
     result(nil)
 #else
+    let providerBundleIdentifier: String
+    switch engine {
+    case "xray":
+      providerBundleIdentifier = xrayBundleIdentifier
+    case "amneziaWg":
+      providerBundleIdentifier = amneziaBundleIdentifier
+    default:
+      result(FlutterError(code: "UNSUPPORTED_ENGINE", message: "Unsupported VPN engine", details: nil))
+      return
+    }
+
     NETunnelProviderManager.loadAllFromPreferences { [weak self] managers, error in
       if let error {
         result(FlutterError(code: "LOAD_FAILED", message: error.localizedDescription, details: nil))
         return
       }
 
-      let selected = managers?.first ?? NETunnelProviderManager()
+      let selected = managers?.first(where: { manager in
+        (manager.protocolConfiguration as? NETunnelProviderProtocol)?
+          .providerBundleIdentifier == providerBundleIdentifier
+      }) ?? NETunnelProviderManager()
       let tunnelProtocol = NETunnelProviderProtocol()
-      tunnelProtocol.providerBundleIdentifier = self?.providerBundleIdentifier
-      tunnelProtocol.serverAddress = URL(string: subscriptionURL)?.host
+      tunnelProtocol.providerBundleIdentifier = providerBundleIdentifier
+      tunnelProtocol.serverAddress = serverAddress
       tunnelProtocol.providerConfiguration = [
-        "subscriptionURL": subscriptionURL,
-        "configurationVersion": 1,
+        "engine": engine,
+        "configuration": configuration,
+        "configurationVersion": 2,
       ]
       selected.localizedDescription = "PrivateVPN"
       selected.protocolConfiguration = tunnelProtocol
@@ -74,8 +104,14 @@ private final class VPNBridge {
           result(FlutterError(code: "SAVE_FAILED", message: saveError.localizedDescription, details: nil))
           return
         }
-        self?.manager = selected
-        result(nil)
+        selected.loadFromPreferences { loadError in
+          if let loadError {
+            result(FlutterError(code: "RELOAD_FAILED", message: loadError.localizedDescription, details: nil))
+            return
+          }
+          self?.manager = selected
+          result(nil)
+        }
       }
     }
 #endif
@@ -96,5 +132,20 @@ private final class VPNBridge {
       result(FlutterError(code: "CONNECT_FAILED", message: error.localizedDescription, details: nil))
     }
 #endif
+  }
+
+  private func statusName(_ status: NEVPNStatus) -> String {
+    switch status {
+    case .connected:
+      "connected"
+    case .connecting, .reasserting:
+      "connecting"
+    case .disconnecting:
+      "disconnecting"
+    case .disconnected, .invalid:
+      "disconnected"
+    @unknown default:
+      "unavailable"
+    }
   }
 }

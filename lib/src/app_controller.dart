@@ -14,7 +14,7 @@ class AppController extends ChangeNotifier {
        _subscriptionClient = subscriptionClient ?? SubscriptionClient(),
        _vpnPlatform = vpnPlatform ?? VpnPlatform();
 
-  static const _subscriptionKey = 'subscription_url';
+  static const _profileKey = 'vpn_profile_v2';
 
   final FlutterSecureStorage _secureStorage;
   final SubscriptionClient _subscriptionClient;
@@ -27,8 +27,11 @@ class AppController extends ChangeNotifier {
 
   Future<void> restore() async {
     try {
-      final stored = await _secureStorage.read(key: _subscriptionKey);
-      if (stored != null) profile = SubscriptionProfile.parse(stored);
+      final stored = await _secureStorage.read(key: _profileKey);
+      if (stored != null) {
+        profile = SubscriptionProfile.deserialize(stored);
+        await _vpnPlatform.configure(profile!);
+      }
     } catch (error) {
       errorMessage = 'Could not restore the saved profile: $error';
     }
@@ -40,13 +43,12 @@ class AppController extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
     try {
-      final candidate = SubscriptionProfile.parse(input);
-      await _subscriptionClient.validate(candidate.subscriptionUri);
+      final candidate = await _subscriptionClient.resolve(input);
+      await _vpnPlatform.configure(candidate);
       await _secureStorage.write(
-        key: _subscriptionKey,
-        value: candidate.subscriptionUri.toString(),
+        key: _profileKey,
+        value: candidate.serialize(),
       );
-      await _vpnPlatform.configure(candidate.subscriptionUri.toString());
       profile = candidate;
       return true;
     } catch (error) {
@@ -82,7 +84,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> removeProfile() async {
     if (vpnState == VpnState.connected) await _vpnPlatform.disconnect();
-    await _secureStorage.delete(key: _subscriptionKey);
+    await _secureStorage.delete(key: _profileKey);
     profile = null;
     vpnState = VpnState.disconnected;
     errorMessage = null;
