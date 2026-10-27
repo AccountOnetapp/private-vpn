@@ -19,10 +19,9 @@
   embedded-extension inspection; simulator install and launch; libXray
   `CGoInvoke` runtime conversion of a VLESS share link; plist, shell/Ruby
   syntax, diff, and Xcode-generator idempotency checks.
-- **Published:** nothing new was pushed or deployed. The public GitHub
-  repository remains <https://github.com/AccountOnetapp/private-vpn> at its
-  previously pushed revision. No TestFlight/App Store build and no VPN gateway
-  deployment were performed.
+- **Published:** implementation `ac6891e` and the initial handoff `6e6c28c`
+  were pushed to `main` at <https://github.com/AccountOnetapp/private-vpn>.
+  No TestFlight/App Store build and no VPN gateway deployment were performed.
 - **Limitations:** real packet flow is not verified without a provisioned
   physical iPhone and reachable gateway. Apple Network Extension capabilities
   must be enabled for the app and both extensions. The unsigned simulator build
